@@ -19,22 +19,22 @@ services:
       CONFIG_STORAGE_TOPIC: connect_configs
       OFFSET_STORAGE_TOPIC: connect_offsets
       STATUS_STORAGE_TOPIC: connect_status
-      # KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
-      # VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
-      # CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      # CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
     depends_on: [redpanda]
     ports:
       - 8083:8083
-  # schema-registry:
-  #   image: confluentinc/cp-schema-registry:5.5.3
-  #   environment:
-  #     - SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=redpanda1:2181
-  #     - SCHEMA_REGISTRY_HOST_NAME=schema-registry
-  #     - SCHEMA_REGISTRY_LISTENERS=http://schema-registry:8081,http://localhost:8081
-  #   ports:
-  #     - 8081:8081
-  #   depends_on: [redpanda]
+  schema-registry:
+    image: confluentinc/cp-schema-registry:5.5.3
+    environment:
+      - SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=redpanda:29092
+      - SCHEMA_REGISTRY_HOST_NAME=schema-registry
+      - SCHEMA_REGISTRY_LISTENERS=http://schema-registry:8081,http://localhost:8081
+    ports:
+      - 8081:8081
+    depends_on: [redpanda]
   kafdrop:
     image: obsidiandynamics/kafdrop
     container_name: kafdrop3

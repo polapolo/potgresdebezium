@@ -1,0 +1,84 @@
+version: '3.7'
+services:
+  postgres:
+    image: debezium/postgres:14
+    container_name: postgres1
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=benchmark
+    logging:
+      driver: none
+  debezium:
+    image: debezium/connect:1.8
+    environment:
+      BOOTSTRAP_SERVERS: redpanda:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect_status
+      # KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      # VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      # CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      # CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    depends_on: [redpanda]
+    ports:
+      - 8083:8083
+  # schema-registry:
+  #   image: confluentinc/cp-schema-registry:5.5.3
+  #   environment:
+  #     - SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=redpanda1:2181
+  #     - SCHEMA_REGISTRY_HOST_NAME=schema-registry
+  #     - SCHEMA_REGISTRY_LISTENERS=http://schema-registry:8081,http://localhost:8081
+  #   ports:
+  #     - 8081:8081
+  #   depends_on: [redpanda]
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    container_name: kafdrop3
+    restart: "no"
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "redpanda1:9092"
+      JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
+    depends_on:
+      - "redpanda"
+    logging:
+      driver: none
+  redpanda:
+    # image: vectorized/redpanda:v21.6.1
+    image: vectorized/redpanda:latest
+    container_name: redpanda1
+    entrypoint:
+      - /usr/bin/rpk
+      - redpanda
+      - start
+      - --smp=2
+      - --memory=4G
+      - --overprovisioned
+      - --default-log-level=info
+      - --node-id=0
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:29092,DOCKER://redpanda:9092,OUTSIDE://redpanda:9093
+      - --advertise-kafka-addr
+      - PLAINTEXT://redpanda:29092,DOCKER://redpanda:9092,OUTSIDE://127.0.0.1:9093
+    ports:
+      - 9092:9092
+      - 9093:9093
+      - 29092:29092
+    volumes:
+      - /var/lib/redpanda2/data:/var/lib/redpanda2/data
+    logging:
+      driver: none
+  # prometheus:
+  #   image: prom/prometheus
+  #   container_name: prometheus
+  #   ports:
+  #     - 9090:9090
+  #   volumes:
+  #     - /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+  #   logging:
+  #     driver: none

@@ -11,21 +11,39 @@ services:
       - POSTGRES_DB=benchmark
     logging:
       driver: none
-  debezium:
-    image: debezium/connect:1.8
-    environment:
-      BOOTSTRAP_SERVERS: redpanda:9092
-      GROUP_ID: 1
-      CONFIG_STORAGE_TOPIC: connect_configs
-      OFFSET_STORAGE_TOPIC: connect_offsets
-      STATUS_STORAGE_TOPIC: connect_status
-      KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
-      VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
-      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-    depends_on: [redpanda]
+  kafka-connect:
+    image: polokuro/kafka-connect-debezium-jdbcsink-docker:v0.0
+    container_name: kafka-connect1
     ports:
       - 8083:8083
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "redpanda:9092"
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: kafka-connect
+      CONNECT_CONFIG_STORAGE_TOPIC: _connect-configs
+      CONNECT_OFFSET_STORAGE_TOPIC: _connect-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: _connect-status
+
+      CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
+
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
+
+      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect"
+
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
+    volumes:
+      - ./data:/data
+      - ./properties/:/properties/
+    depends_on: 
+      - redpanda
+      - schema-registry
+      - postgres
+    logging:
+      driver: none
   schema-registry:
     image: confluentinc/cp-schema-registry:5.5.3
     environment:
@@ -34,7 +52,10 @@ services:
       - SCHEMA_REGISTRY_LISTENERS=http://schema-registry:8081,http://localhost:8081
     ports:
       - 8081:8081
-    depends_on: [redpanda]
+    depends_on:
+      - redpanda
+    logging:
+      driver: none
   kafdrop:
     image: obsidiandynamics/kafdrop
     container_name: kafdrop3

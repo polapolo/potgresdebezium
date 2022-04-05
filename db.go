@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -36,7 +35,7 @@ func copyOrders(ctx context.Context, dataRows [][]interface{}) error {
 	db := connectDB(ctx)
 	defer db.Close()
 
-	startTime := time.Now()
+	// startTime := time.Now()
 
 	cols := []string{"id", "user_id", "stock_code", "type", "lot", "price", "status", "created_at"}
 
@@ -51,8 +50,8 @@ func copyOrders(ctx context.Context, dataRows [][]interface{}) error {
 		return errors.New("whut")
 	}
 
-	timeElapsed := time.Since(startTime)
-	log.Println("Total Time Copy Order Speed:", timeElapsed.Milliseconds(), "ms")
+	// timeElapsed := time.Since(startTime)
+	// log.Println("Total Time Copy Order Speed:", timeElapsed.Milliseconds(), "ms")
 
 	return nil
 }

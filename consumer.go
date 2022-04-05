@@ -22,14 +22,18 @@ func InsertOrderConsumer() {
 		panic(err)
 	}
 
-	startTime := time.Now()
+	wholeStartTime := time.Now()
 	schema := avro.MustParse(schemaOrder)
 
 	var counter int64
+	var loop int64
 
 consumerLoop:
 	for {
-		fetches := redPandaClient.PollRecords(context.Background(), 1000000)
+		loop++
+		// startTime := time.Now()
+		maxRecordPerConsume := 1000000
+		fetches := redPandaClient.PollRecords(context.Background(), maxRecordPerConsume)
 		for _, fetchErr := range fetches.Errors() {
 			log.Printf("error consuming from topic: topic=%s, partition=%d, err=%v\n",
 				fetchErr.Topic, fetchErr.Partition, fetchErr.Err)
@@ -38,7 +42,8 @@ consumerLoop:
 
 		dataRows := make([][]interface{}, 0)
 		records := fetches.Records()
-		log.Println("Num. of Records:", len(records))
+		numOfRecords := len(records)
+		// var sumOfSpeed float64
 		for _, record := range fetches.Records() {
 			counter++
 
@@ -75,6 +80,15 @@ consumerLoop:
 			log.Println(err)
 			return
 		}
-		log.Println("Insert Order Speed:", time.Since(startTime).Milliseconds())
+
+		if numOfRecords > 0 {
+			// speed := time.Since(startTime).Milliseconds()
+			// sumOfSpeed += float64(speed)
+			// log.Println("NumOfRecords:", numOfRecords, "; Speed:", speed, "ms")
+			if counter == 1000000 {
+				// log.Println("Avg Speed:", sumOfSpeed/float64(loop)/float64(maxRecordPerConsume), "ms")
+				log.Println("Speed:", time.Since(wholeStartTime).Milliseconds(), "ms")
+			}
+		}
 	}
 }

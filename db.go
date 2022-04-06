@@ -35,8 +35,6 @@ func copyOrders(ctx context.Context, dataRows [][]interface{}) error {
 	db := connectDB(ctx)
 	defer db.Close()
 
-	// startTime := time.Now()
-
 	cols := []string{"id", "user_id", "stock_code", "type", "lot", "price", "status", "created_at"}
 
 	rows := pgx.CopyFromRows(dataRows)
@@ -50,8 +48,42 @@ func copyOrders(ctx context.Context, dataRows [][]interface{}) error {
 		return errors.New("whut")
 	}
 
-	// timeElapsed := time.Since(startTime)
-	// log.Println("Total Time Copy Order Speed:", timeElapsed.Milliseconds(), "ms")
+	return nil
+}
+
+func copyOrdersUnique(ctx context.Context, db *pgxpool.Pool, dataRows [][]interface{}) error {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = tx.Exec(ctx, "CREATE TEMP TABLE tmp_orders (LIKE orders INCLUDING DEFAULTS) ON COMMIT DROP;")
+	if err != nil {
+		panic(err)
+	}
+
+	cols := []string{"id", "user_id", "stock_code", "type", "lot", "price", "status", "created_at"}
+	rows := pgx.CopyFromRows(dataRows)
+
+	inserted, err := tx.CopyFrom(ctx, pgx.Identifier{"tmp_orders"}, cols, rows)
+	if err != nil {
+		panic(err)
+	}
+
+	if inserted != int64(len(dataRows)) {
+		log.Printf("Failed to insert all the data! Expected: %d, Got: %d", len(dataRows), inserted)
+		return errors.New("whut")
+	}
+
+	_, err = tx.Exec(ctx, `INSERT INTO orders SELECT * FROM tmp_orders ON CONFLICT DO NOTHING;`)
+	if err != nil {
+		panic(err)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		panic(err)
+	}
 
 	return nil
 }

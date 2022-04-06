@@ -20,7 +20,8 @@ func main() {
 	defer redPandaClient.Close()
 
 	// consumer
-	go InsertOrderConsumer()
+	// go InsertOrderConsumer()
+	go InsertOrderConsumerManualCommit()
 
 	// http endpoint
 	r := gin.Default()

@@ -15,12 +15,15 @@ func InsertOrderConsumer() {
 		kgo.ConsumeTopics(
 			topicOrdersInsertAVRO,
 		),
+		kgo.ConsumerGroup("insert_order_consumer"),
+		kgo.GreedyAutoCommit(),
 	}
 	redPandaClient, err := kgo.NewClient(opts...)
 	if err != nil {
 		log.Println(err)
 		panic(err)
 	}
+	defer redPandaClient.Close()
 
 	wholeStartTime := time.Now()
 	schema := avro.MustParse(schemaOrder)
